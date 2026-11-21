@@ -65,6 +65,137 @@
         "chatSessionId": "sess_9519d52b-d616-4487-8dc8-cb34b59eaadf",
         "timestamp": 1795264291098
       }
+    ],
+    "3.2 Implement the ID strategy (random and natural-key)": [
+      {
+        "executionId": "98d22c66-5023-4fdd-9ce7-2a03b132f642",
+        "chatSessionId": "sess_366c531f-29a7-4dca-87ba-28d83ca9f47c",
+        "timestamp": 1795265000166
+      },
+      {
+        "executionId": "98d22c66-5023-4fdd-9ce7-2a03b132f642",
+        "chatSessionId": "sess_366c531f-29a7-4dca-87ba-28d83ca9f47c",
+        "timestamp": 1795265059908
+      },
+      {
+        "executionId": "19e484fc-6a2e-460b-8cd6-46b874c12964",
+        "chatSessionId": "sess_366c531f-29a7-4dca-87ba-28d83ca9f47c",
+        "timestamp": 1795265539066
+      },
+      {
+        "executionId": "9863c0b0-ccc1-4682-9353-ef6ce5020b59",
+        "chatSessionId": "sess_366c531f-29a7-4dca-87ba-28d83ca9f47c",
+        "timestamp": 1795265822194
+      },
+      {
+        "executionId": "9863c0b0-ccc1-4682-9353-ef6ce5020b59",
+        "chatSessionId": "sess_366c531f-29a7-4dca-87ba-28d83ca9f47c",
+        "timestamp": 1795266094499
+      }
+    ],
+    "3.3 Write unit tests for doc-keys and ID helpers": [
+      {
+        "executionId": "3d6b465a-d406-4068-8ddb-c744ed3fd5ce",
+        "chatSessionId": "sess_366c531f-29a7-4dca-87ba-28d83ca9f47c",
+        "timestamp": 1795266256646
+      }
+    ],
+    "3. Data layout inside the Y.Doc": [
+      {
+        "executionId": "3d6b465a-d406-4068-8ddb-c744ed3fd5ce",
+        "chatSessionId": "sess_366c531f-29a7-4dca-87ba-28d83ca9f47c",
+        "timestamp": 1795266257272
+      }
+    ],
+    "4.1 Implement `create` and `get`/`all`": [
+      {
+        "executionId": "e09b37d5-b9bd-48dc-8556-af939ed79f5e",
+        "chatSessionId": "sess_e4a113c4-8b9b-4346-8a71-1376bf2f9a3e",
+        "timestamp": 1795266353308
+      },
+      {
+        "executionId": "e09b37d5-b9bd-48dc-8556-af939ed79f5e",
+        "chatSessionId": "sess_e4a113c4-8b9b-4346-8a71-1376bf2f9a3e",
+        "timestamp": 1795266453123
+      },
+      {
+        "executionId": "98f8dd27-6d24-4f39-9604-1089c7ce483c",
+        "chatSessionId": "sess_e4a113c4-8b9b-4346-8a71-1376bf2f9a3e",
+        "timestamp": 1795276205240
+      },
+      {
+        "executionId": "98f8dd27-6d24-4f39-9604-1089c7ce483c",
+        "chatSessionId": "sess_e4a113c4-8b9b-4346-8a71-1376bf2f9a3e",
+        "timestamp": 1795276502659
+      },
+      {
+        "executionId": "b9df7b57-8927-48b4-afd5-531ee262bb6b",
+        "chatSessionId": "sess_e4a113c4-8b9b-4346-8a71-1376bf2f9a3e",
+        "timestamp": 1795276568064
+      },
+      {
+        "executionId": "b9df7b57-8927-48b4-afd5-531ee262bb6b",
+        "chatSessionId": "sess_e4a113c4-8b9b-4346-8a71-1376bf2f9a3e",
+        "timestamp": 1795277289755
+      }
+    ],
+    "4.2 Implement `update`, `increment`/`decrement`, `editText`, and `remove`": [
+      {
+        "executionId": "fd42bd2b-968d-4d83-b7da-5fa552065615",
+        "chatSessionId": "sess_a0d19303-bac1-4466-8fa5-0b7e381f3b02",
+        "timestamp": 1795277502805
+      },
+      {
+        "executionId": "fd42bd2b-968d-4d83-b7da-5fa552065615",
+        "chatSessionId": "sess_a0d19303-bac1-4466-8fa5-0b7e381f3b02",
+        "timestamp": 1795277613886
+      },
+      {
+        "executionId": "a6162d11-b931-4202-a483-7498b174cb5c",
+        "chatSessionId": "sess_a0d19303-bac1-4466-8fa5-0b7e381f3b02",
+        "timestamp": 1795278503098
+      },
+      {
+        "executionId": "a6162d11-b931-4202-a483-7498b174cb5c",
+        "chatSessionId": "sess_a0d19303-bac1-4466-8fa5-0b7e381f3b02",
+        "timestamp": 1795279821890
+      }
+    ],
+    "4.3 Write unit tests for all collection operations": [
+      {
+        "executionId": "8812099a-90be-45fb-9567-65d0f3c0315f",
+        "chatSessionId": "sess_e109b4e5-7873-4d36-a853-072e8ca4cafd",
+        "timestamp": 1795279859703
+      },
+      {
+        "executionId": "8812099a-90be-45fb-9567-65d0f3c0315f",
+        "chatSessionId": "sess_e109b4e5-7873-4d36-a853-072e8ca4cafd",
+        "timestamp": 1795281637109
+      },
+      {
+        "executionId": "ce299a22-fd73-486a-8310-f52037fa8bd9",
+        "chatSessionId": "sess_e109b4e5-7873-4d36-a853-072e8ca4cafd",
+        "timestamp": 1795281851064
+      },
+      {
+        "executionId": "ce299a22-fd73-486a-8310-f52037fa8bd9",
+        "chatSessionId": "sess_e109b4e5-7873-4d36-a853-072e8ca4cafd",
+        "timestamp": 1795282170070
+      }
+    ],
+    "4. Collection operations": [
+      {
+        "executionId": "8812099a-90be-45fb-9567-65d0f3c0315f",
+        "chatSessionId": "sess_e109b4e5-7873-4d36-a853-072e8ca4cafd",
+        "timestamp": 1795281639537
+      }
+    ],
+    "5. Checkpoint — verify collection layer": [
+      {
+        "executionId": "2730acfa-3f2e-4b9a-81c5-7e7a8cb6c09a",
+        "chatSessionId": "sess_aa99dc10-6558-4f64-8c29-a25383e537de",
+        "timestamp": 1795282503766
+      }
     ]
   }
 }

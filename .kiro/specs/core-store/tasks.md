@@ -29,24 +29,24 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
     - Verify that invalid collection and field names (containing ":" or "/", empty, or field names starting with "_") throw at runtime
     - _Requirements: 1.1, 1.2_
 
-- [ ] 3. Data layout inside the Y.Doc
+- [x] 3. Data layout inside the Y.Doc
   - [x] 3.1 Implement the flat Y.Doc layout helpers
     - Create `packages/core/src/store/doc-keys.ts` with pure functions that build map/text keys (`c:records`, `c:values`, `c:tallies`, `c:text:recordId/field`)
     - Write helpers that read and write `c:records`, `c:values`, `c:tallies` on a given `Y.Doc`, keeping all Yjs types at this layer
     - _Requirements: 3.1, 3.3, 3.4, 3.5_
 
-  - [ ] 3.2 Implement the ID strategy (random and natural-key)
+  - [x] 3.2 Implement the ID strategy (random and natural-key)
     - Create `packages/core/src/store/id.ts` with `randomId()` using `crypto.randomUUID()`
     - Implement `naturalKeyId(raw)` that normalises with Unicode NFKC, lowercases, strips whitespace and punctuation, then prefixes with `k:`
     - _Requirements: 3.1, 3.7_
 
-  - [ ] 3.3 Write unit tests for doc-keys and ID helpers
+  - [x] 3.3 Write unit tests for doc-keys and ID helpers
     - Verify key patterns for all four map/text names
     - Verify natural-key normalisation for representative inputs ("Rice (50 kg)" → `"k:rice50kg"`)
     - _Requirements: 3.1, 3.7_
 
-- [ ] 4. Collection operations
-  - [ ] 4.1 Implement `create` and `get`/`all`
+- [x] 4. Collection operations
+  - [x] 4.1 Implement `create` and `get`/`all`
     - Create `packages/core/src/store/collection.ts` exporting a `CollectionHandle<R>` class
     - `create(fields)` writes a row to `c:records` and sets initial `value` fields in `c:values`; uses natural-key if declared, returning the existing ID if the key already exists; uses `randomId()` otherwise
     - `get(id)` reads all fields for the record, returns `undefined` for missing or deleted records
@@ -55,20 +55,21 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
     - If create finds an existing natural-key record that is soft-deleted, restore it by removing its _deleted flag
     - _Requirements: 3.1, 3.2, 3.7_
 
-  - [ ] 4.2 Implement `update`, `increment`/`decrement`, `editText`, and `remove`
+  - [x] 4.2 Implement `update`, `increment`/`decrement`, `editText`, and `remove`
     - `update(id, patch)` writes changed `value` fields to `c:values`; throws for missing/deleted records or unknown fields
     - `increment(id, field, n)` / `decrement(id, field, n)` write to the tally key `recordId/field/clientId` without reading the total; throw for non-counter fields
     - `editText(id, field, op)` calls `Y.Text.insert` or `Y.Text.delete`; throws for non-text fields
     - `remove(id)` sets `recordId/_deleted` to `true` in `c:values`
     - increment/decrement amounts must be positive safe integers (Number.isSafeInteger and > 0); throw otherwise. Decimal amounts would make sums depend on order and break convergence
+    - `update` accepts value fields only (Partial of value fields); throws for unknown or non-value fields, like create
     - _Requirements: 3.3, 3.4, 3.5, 3.6_
 
-  - [ ] 4.3 Write unit tests for all collection operations
+  - [x] 4.3 Write unit tests for all collection operations
     - Test create → get round-trip, update, increment, decrement, text edit, remove
     - Test error cases: wrong field kind, missing record, writing to a deleted record
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-- [ ] 5. Checkpoint — verify collection layer
+- [-] 5. Checkpoint — verify collection layer
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Space: opening, persistence, subscriptions, snapshots

@@ -41,7 +41,7 @@ space.encodeState();    // for sync and tests
 space.applyUpdate(u);
 await space.close();
 ```
-- Record IDs: random `crypto.randomUUID()` by default. With a natural key, the ID is `k:` followed by the key normalised (Unicode NFKC, lowercased, with all whitespace and punctuation removed, e.g. "Rice (50 kg)" → "rice50kg"). `create` with an existing key returns the existing ID and leaves its fields unchanged.
+- Record IDs: random `crypto.randomUUID()` by default. With a natural key, the ID is `k:` followed by the key normalised (Unicode NFKC, then accents and tone marks removed (NFD, drop \p{M}), lowercased, with all whitespace, punctuation and symbols removed; e.g. "Rice (50 kg)" → "rice50kg", "Ògì" → "ogi"). A key that is empty after normalising throws an error. `create` with an existing key returns the existing ID and leaves its fields unchanged; if that record was soft-deleted, it is restored.
 
 ## Data Models
 Flat layout, no nested shared types per record, so records created at the same time on two copies never overwrite each other. For a collection named `c`:

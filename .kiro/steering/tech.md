@@ -21,3 +21,4 @@ inclusion: always
 - Explain why before adding a dependency. Prefer small, well-maintained ones.
 - No secrets in the repo. Configuration comes from environment variables.
 - A task is only done when `pnpm typecheck` and `pnpm test` both pass in every package it touched. Vitest does not type-check.
+- Edit files only with the file-editing tools, never with shell commands (cat, sed, echo, heredocs) or scripts (python, node). Every change must show up for review.
