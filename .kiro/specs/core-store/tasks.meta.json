@@ -1,0 +1,17 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Scaffold the monorepo and `packages/core`": [
+      {
+        "executionId": "12a692f6-f964-4f30-9ff0-ade577678001",
+        "chatSessionId": "sess_ce22ed11-9bfd-469d-a087-a36907fd7dfe",
+        "timestamp": 1795258264810
+      },
+      {
+        "executionId": "75665579-4a6d-4ab3-ab85-f20e4aa36f19",
+        "chatSessionId": "sess_ce22ed11-9bfd-469d-a087-a36907fd7dfe",
+        "timestamp": 1795259889189
+      }
+    ]
+  }
+}

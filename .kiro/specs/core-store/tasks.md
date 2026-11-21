@@ -6,7 +6,7 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
 
 ## Tasks
 
-- [ ] 1. Scaffold the monorepo and `packages/core`
+- [x] 1. Scaffold the monorepo and `packages/core`
   - Create `pnpm-workspace.yaml` listing `packages/*`, `apps/*`, `server`
   - Create `tsconfig.base.json` at the repo root with strict mode enabled
   - Create `packages/core/package.json` with `yjs`, `y-indexeddb` as runtime dependencies and `vitest`, `fast-check`, `fake-indexeddb`, `@vitest/coverage-v8` as dev dependencies
