@@ -73,7 +73,7 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Space: opening, persistence, subscriptions, snapshots
-  - [ ] 6.1 Implement `openSpace`
+  - [x] 6.1 Implement `openSpace`
     - Create `packages/core/src/space/open-space.ts` exporting `openSpace({ id, schema })`
     - Opens a `Y.Doc`, attaches a `y-indexeddb` provider using `id` as the name, waits for `provider.whenSynced` before resolving
     - Builds a `CollectionHandle` per collection and exposes it via `space.collection(name)`
