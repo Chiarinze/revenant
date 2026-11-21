@@ -194,3 +194,441 @@ describe('CollectionHandle.all', () => {
     expect(records[0]?.id).toBe(id);
   });
 });
+
+// ---------------------------------------------------------------------------
+// update
+// ---------------------------------------------------------------------------
+
+describe('CollectionHandle.update', () => {
+  let doc: Y.Doc;
+  beforeEach(() => { doc = new Y.Doc(); });
+
+  it('writes changed value fields to the record', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.update(id, { unit: 'bag' });
+    expect(handle.get(id)?.unit).toBe('bag');
+  });
+
+  it('skips undefined values in the patch', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    // Cast through unknown to test runtime behaviour with an undefined value.
+    const patch = { unit: undefined } as unknown as Partial<{ name: string; unit: string }>;
+    handle.update(id, patch);
+    expect(handle.get(id)?.unit).toBe('kg');
+  });
+
+  it('throws for a missing record', () => {
+    const handle = makeHandle(doc, false);
+    expect(() => handle.update('no-such-id', { name: 'X' })).toThrow();
+  });
+
+  it('throws for a deleted record', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    softDelete(doc, 'products', id);
+    expect(() => handle.update(id, { name: 'X' })).toThrow();
+  });
+
+  it('throws for an undeclared field', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    // @ts-expect-error intentional
+    expect(() => handle.update(id, { ghost: 'oops' })).toThrowError(/not declared/);
+  });
+
+  it('throws when patching a counter field', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    // @ts-expect-error intentional
+    expect(() => handle.update(id, { stock: 5 })).toThrowError(/not a value field/);
+  });
+
+  it('blocks a natural-key change', () => {
+    const handle = makeHandle(doc); // withKey = true
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    expect(() => handle.update(id, { name: 'Beans' })).toThrowError(/natural key cannot change/);
+  });
+
+  it('allows a rename when casing changes but natural key stays the same (RICE)', () => {
+    const handle = makeHandle(doc); // withKey = true
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    expect(() => handle.update(id, { name: 'RICE' })).not.toThrow();
+    expect(handle.get(id)?.name).toBe('RICE');
+  });
+
+  it('allows a rename when punctuation differs but natural key stays the same (rice!)', () => {
+    const handle = makeHandle(doc); // withKey = true
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    expect(() => handle.update(id, { name: 'rice!' })).not.toThrow();
+    expect(handle.get(id)?.id).toBe(id);
+    expect(handle.get(id)?.name).toBe('rice!');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// increment
+// ---------------------------------------------------------------------------
+
+describe('CollectionHandle.increment', () => {
+  let doc: Y.Doc;
+  beforeEach(() => { doc = new Y.Doc(); });
+
+  it('increases the counter', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.increment(id, 'stock', 5);
+    expect(handle.get(id)?.stock).toBe(5);
+  });
+
+  it('accumulates across multiple increments', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.increment(id, 'stock', 3);
+    handle.increment(id, 'stock', 7);
+    expect(handle.get(id)?.stock).toBe(10);
+  });
+
+  it('throws for a non-positive amount', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    expect(() => handle.increment(id, 'stock', 0)).toThrow();
+    expect(() => handle.increment(id, 'stock', -1)).toThrow();
+  });
+
+  it('throws for a non-integer amount', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    expect(() => handle.increment(id, 'stock', 1.5)).toThrow();
+  });
+
+  it('throws for a missing record', () => {
+    const handle = makeHandle(doc, false);
+    expect(() => handle.increment('no-such-id', 'stock', 1)).toThrow();
+  });
+
+  it('throws for a deleted record', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    softDelete(doc, 'products', id);
+    expect(() => handle.increment(id, 'stock', 1)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// decrement
+// ---------------------------------------------------------------------------
+
+describe('CollectionHandle.decrement', () => {
+  let doc: Y.Doc;
+  beforeEach(() => { doc = new Y.Doc(); });
+
+  it('decreases the counter', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.increment(id, 'stock', 10);
+    handle.decrement(id, 'stock', 3);
+    expect(handle.get(id)?.stock).toBe(7);
+  });
+
+  it('throws for a non-positive amount', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    expect(() => handle.decrement(id, 'stock', 0)).toThrow();
+  });
+
+  it('throws for a missing record', () => {
+    const handle = makeHandle(doc, false);
+    expect(() => handle.decrement('no-such-id', 'stock', 1)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// editText
+// ---------------------------------------------------------------------------
+
+describe('CollectionHandle.editText', () => {
+  let doc: Y.Doc;
+  beforeEach(() => { doc = new Y.Doc(); });
+
+  it('inserts text', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.editText(id, 'notes', { index: 0, insert: 'hello' });
+    expect(handle.get(id)?.notes).toBe('hello');
+  });
+
+  it('deletes text', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.editText(id, 'notes', { index: 0, insert: 'hello world' });
+    handle.editText(id, 'notes', { index: 5, delete: 6 });
+    expect(handle.get(id)?.notes).toBe('hello');
+  });
+
+  it('replace: deletes first then inserts when op has both delete and insert', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.editText(id, 'notes', { index: 0, insert: 'hello' });
+    handle.editText(id, 'notes', { index: 0, delete: 5, insert: 'world' });
+    expect(handle.get(id)?.notes).toBe('world');
+  });
+
+  it('throws when op has neither insert nor delete', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    expect(() => handle.editText(id, 'notes', { index: 0 })).toThrowError(/insert, delete, or both/);
+  });
+
+  it('throws for a negative index', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    expect(() => handle.editText(id, 'notes', { index: -1, insert: 'x' })).toThrowError(/non-negative integer/);
+  });
+
+  it('throws when delete length is out of bounds', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.editText(id, 'notes', { index: 0, insert: 'hi' });
+    expect(() => handle.editText(id, 'notes', { index: 0, delete: 99 })).toThrowError(/out of bounds/);
+  });
+
+  it('throws for a missing record', () => {
+    const handle = makeHandle(doc, false);
+    expect(() => handle.editText('no-such-id', 'notes', { index: 0, insert: 'x' })).toThrow();
+  });
+
+  it('throws when field is not a text field', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    // @ts-expect-error intentional wrong field kind
+    expect(() => handle.editText(id, 'stock', { index: 0, insert: 'x' })).toThrowError(/not a text field/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// remove
+// ---------------------------------------------------------------------------
+
+describe('CollectionHandle.remove', () => {
+  let doc: Y.Doc;
+  beforeEach(() => { doc = new Y.Doc(); });
+
+  it('soft-deletes a record so get returns undefined', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.remove(id);
+    expect(handle.get(id)).toBeUndefined();
+  });
+
+  it('throws for a missing record', () => {
+    const handle = makeHandle(doc, false);
+    expect(() => handle.remove('no-such-id')).toThrow();
+  });
+
+  it('throws when already deleted', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.remove(id);
+    expect(() => handle.remove(id)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// increment — additional error cases
+// ---------------------------------------------------------------------------
+
+describe('CollectionHandle.increment — additional error cases', () => {
+  let doc: Y.Doc;
+  beforeEach(() => { doc = new Y.Doc(); });
+
+  it('throws for a value field (not a counter)', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    // @ts-expect-error intentional wrong field kind
+    expect(() => handle.increment(id, 'name', 1)).toThrowError(/not a counter field/);
+  });
+
+  it('throws for a text field (not a counter)', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    // @ts-expect-error intentional wrong field kind
+    expect(() => handle.increment(id, 'notes', 1)).toThrowError(/not a counter field/);
+  });
+
+  it('throws for a non-safe-integer amount', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    expect(() => handle.increment(id, 'stock', Number.MAX_SAFE_INTEGER + 1)).toThrow();
+    expect(() => handle.increment(id, 'stock', Infinity)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// decrement — additional error cases
+// ---------------------------------------------------------------------------
+
+describe('CollectionHandle.decrement — additional error cases', () => {
+  let doc: Y.Doc;
+  beforeEach(() => { doc = new Y.Doc(); });
+
+  it('throws for a value field (not a counter)', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    // @ts-expect-error intentional wrong field kind
+    expect(() => handle.decrement(id, 'name', 1)).toThrowError(/not a counter field/);
+  });
+
+  it('throws for a text field (not a counter)', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    // @ts-expect-error intentional wrong field kind
+    expect(() => handle.decrement(id, 'notes', 1)).toThrowError(/not a counter field/);
+  });
+
+  it('throws for a deleted record', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.increment(id, 'stock', 5);
+    softDelete(doc, 'products', id);
+    expect(() => handle.decrement(id, 'stock', 1)).toThrow();
+  });
+
+  it('throws for a non-safe-integer amount', () => {
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    expect(() => handle.decrement(id, 'stock', 1.5)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cross-doc tally: increment/decrement across two independent Y.Doc copies
+// ---------------------------------------------------------------------------
+
+describe('Counter tally across two Y.Doc copies', () => {
+  it('sums tallies from two separate docs after exchanging updates', () => {
+    const docA = new Y.Doc({ guid: 'shop' });
+    const docB = new Y.Doc({ guid: 'shop' });
+
+    const handleA = makeHandle(docA, false);
+    const handleB = makeHandle(docB, false);
+
+    // Create the record on A and sync it to B.
+    const id = handleA.create({ name: 'Rice', unit: 'kg' });
+    Y.applyUpdate(docB, Y.encodeStateAsUpdate(docA));
+
+    // Each doc increments independently.
+    handleA.increment(id, 'stock', 10);
+    handleB.increment(id, 'stock', 5);
+
+    // Exchange updates.
+    Y.applyUpdate(docB, Y.encodeStateAsUpdate(docA));
+    Y.applyUpdate(docA, Y.encodeStateAsUpdate(docB));
+
+    expect(handleA.get(id)?.stock).toBe(15);
+    expect(handleB.get(id)?.stock).toBe(15);
+  });
+
+  it('two copies each decrement; total reflects both decrements', () => {
+    const docA = new Y.Doc({ guid: 'shop' });
+    const docB = new Y.Doc({ guid: 'shop' });
+
+    const handleA = makeHandle(docA, false);
+    const handleB = makeHandle(docB, false);
+
+    // Start with stock 20 on A and sync.
+    const id = handleA.create({ name: 'Beans', unit: 'kg' });
+    handleA.increment(id, 'stock', 20);
+    Y.applyUpdate(docB, Y.encodeStateAsUpdate(docA));
+
+    // Both decrements happen independently (offline).
+    handleA.decrement(id, 'stock', 3);
+    handleB.decrement(id, 'stock', 7);
+
+    // Sync.
+    Y.applyUpdate(docB, Y.encodeStateAsUpdate(docA));
+    Y.applyUpdate(docA, Y.encodeStateAsUpdate(docB));
+
+    // 20 − 3 − 7 = 10
+    expect(handleA.get(id)?.stock).toBe(10);
+    expect(handleB.get(id)?.stock).toBe(10);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Single transaction per operation (one subscriber notification per call)
+// ---------------------------------------------------------------------------
+
+describe('Each write emits exactly one subscriber notification per operation', () => {
+  it('create fires exactly one update event', () => {
+    const doc = new Y.Doc();
+    let callCount = 0;
+    doc.on('update', () => { callCount++; });
+
+    const handle = makeHandle(doc, false);
+    handle.create({ name: 'Rice', unit: 'kg' });
+    expect(callCount).toBe(1);
+  });
+
+  it('update fires exactly one update event', () => {
+    const doc = new Y.Doc();
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+
+    let callCount = 0;
+    doc.on('update', () => { callCount++; });
+
+    handle.update(id, { unit: 'bag', name: 'Rice 50kg' });
+    expect(callCount).toBe(1);
+  });
+
+  it('increment fires exactly one update event', () => {
+    const doc = new Y.Doc();
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+
+    let callCount = 0;
+    doc.on('update', () => { callCount++; });
+
+    handle.increment(id, 'stock', 5);
+    expect(callCount).toBe(1);
+  });
+
+  it('decrement fires exactly one update event', () => {
+    const doc = new Y.Doc();
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+    handle.increment(id, 'stock', 10);
+
+    let callCount = 0;
+    doc.on('update', () => { callCount++; });
+
+    handle.decrement(id, 'stock', 3);
+    expect(callCount).toBe(1);
+  });
+
+  it('editText fires exactly one update event', () => {
+    const doc = new Y.Doc();
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+
+    let callCount = 0;
+    doc.on('update', () => { callCount++; });
+
+    handle.editText(id, 'notes', { index: 0, insert: 'hello' });
+    expect(callCount).toBe(1);
+  });
+
+  it('remove fires exactly one update event', () => {
+    const doc = new Y.Doc();
+    const handle = makeHandle(doc, false);
+    const id = handle.create({ name: 'Rice', unit: 'kg' });
+
+    let callCount = 0;
+    doc.on('update', () => { callCount++; });
+
+    handle.remove(id);
+    expect(callCount).toBe(1);
+  });
+});

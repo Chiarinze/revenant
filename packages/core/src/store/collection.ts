@@ -22,6 +22,20 @@ import {
 import { randomId, naturalKeyId } from './id.js';
 
 // ---------------------------------------------------------------------------
+// Narrowing helper types
+// ---------------------------------------------------------------------------
+
+/** Keys of F whose kind is CounterKind. */
+type CounterKeys<F extends FieldMap> = {
+  [K in keyof F]: F[K] extends CounterKind ? K : never;
+}[keyof F] & string;
+
+/** Keys of F whose kind is TextKind. */
+type TextKeys<F extends FieldMap> = {
+  [K in keyof F]: F[K] extends TextKind ? K : never;
+}[keyof F] & string;
+
+// ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
@@ -199,24 +213,137 @@ export class CollectionHandle<F extends FieldMap> {
    * Updates `value` fields on an existing, non-deleted record.
    * @throws if the record is missing or deleted.
    */
-  update(_id: string, _patch: Partial<InferRecord<ValueFields<F>>>): void {
-    throw new Error('not implemented');
+  update(id: string, patch: Partial<InferRecord<ValueFields<F>>>): void {
+    if (!hasRecord(this.doc, this.name, id)) {
+      throw new Error(`Record "${id}" does not exist in collection "${this.name}"`);
+    }
+    if (isDeleted(this.doc, this.name, id)) {
+      throw new Error(`Record "${id}" has been deleted in collection "${this.name}"`);
+    }
+
+    for (const fieldName of Object.keys(patch)) {
+      const kind = this.descriptor.fields[fieldName] as
+        | ValueKind<unknown>
+        | CounterKind
+        | TextKind
+        | undefined;
+
+      if (kind === undefined) {
+        throw new Error(
+          `Field "${fieldName}" is not declared in collection "${this.name}"`,
+        );
+      }
+      if (kind.kind !== 'value') {
+        throw new Error(
+          `Field "${fieldName}" in collection "${this.name}" is not a value field (kind: "${kind.kind}")`,
+        );
+      }
+    }
+
+    // Fix 2 — block natural-key changes.
+    if (this.descriptor.key !== undefined) {
+      const currentValues: Record<string, unknown> = {};
+      for (const [fieldName, kind] of Object.entries(this.descriptor.fields)) {
+        const typedKind = kind as ValueKind<unknown> | CounterKind | TextKind;
+        if (typedKind.kind === 'value') {
+          currentValues[fieldName] = getValue(this.doc, this.name, id, fieldName);
+        }
+      }
+      const mergedSnapshot: Record<string, unknown> = { ...currentValues };
+      for (const [fieldName, v] of Object.entries(patch)) {
+        if (v !== undefined) {
+          mergedSnapshot[fieldName] = v;
+        }
+      }
+      const computedId = naturalKeyId(
+        this.descriptor.key(mergedSnapshot as InferRecord<ValueFields<F>>),
+      );
+      if (computedId !== id) {
+        throw new Error('natural key cannot change; create a new record instead');
+      }
+    }
+
+    this.doc.transact(() => {
+      for (const [fieldName, v] of Object.entries(patch)) {
+        if (v !== undefined) {
+          setValue(this.doc, this.name, id, fieldName, v);
+        }
+      }
+    });
   }
 
   /**
    * Increments a `counter` field by `amount`.
    * @throws if the field is not a counter, or if the record is missing/deleted.
    */
-  increment(_id: string, _field: keyof F & string, _amount: number): void {
-    throw new Error('not implemented');
+  increment(id: string, field: CounterKeys<F>, amount: number): void {
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      throw new Error(`increment amount must be a positive safe integer, got ${amount}`);
+    }
+
+    const kind = this.descriptor.fields[field] as
+      | ValueKind<unknown>
+      | CounterKind
+      | TextKind
+      | undefined;
+
+    if (kind === undefined) {
+      throw new Error(
+        `Field "${field}" is not declared in collection "${this.name}"`,
+      );
+    }
+    if (kind.kind !== 'counter') {
+      throw new Error(
+        `Field "${field}" in collection "${this.name}" is not a counter field (kind: "${kind.kind}")`,
+      );
+    }
+    if (!hasRecord(this.doc, this.name, id)) {
+      throw new Error(`Record "${id}" does not exist in collection "${this.name}"`);
+    }
+    if (isDeleted(this.doc, this.name, id)) {
+      throw new Error(`Record "${id}" has been deleted in collection "${this.name}"`);
+    }
+
+    this.doc.transact(() => {
+      addTally(this.doc, this.name, id, field, this.doc.clientID, { inc: amount, dec: 0 });
+    });
   }
 
   /**
    * Decrements a `counter` field by `amount`.
    * @throws if the field is not a counter, or if the record is missing/deleted.
    */
-  decrement(_id: string, _field: keyof F & string, _amount: number): void {
-    throw new Error('not implemented');
+  decrement(id: string, field: CounterKeys<F>, amount: number): void {
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      throw new Error(`decrement amount must be a positive safe integer, got ${amount}`);
+    }
+
+    const kind = this.descriptor.fields[field] as
+      | ValueKind<unknown>
+      | CounterKind
+      | TextKind
+      | undefined;
+
+    if (kind === undefined) {
+      throw new Error(
+        `Field "${field}" is not declared in collection "${this.name}"`,
+      );
+    }
+    if (kind.kind !== 'counter') {
+      throw new Error(
+        `Field "${field}" in collection "${this.name}" is not a counter field (kind: "${kind.kind}")`,
+      );
+    }
+    if (!hasRecord(this.doc, this.name, id)) {
+      throw new Error(`Record "${id}" does not exist in collection "${this.name}"`);
+    }
+    if (isDeleted(this.doc, this.name, id)) {
+      throw new Error(`Record "${id}" has been deleted in collection "${this.name}"`);
+    }
+
+    this.doc.transact(() => {
+      addTally(this.doc, this.name, id, field, this.doc.clientID, { inc: 0, dec: amount });
+    });
   }
 
   /**
@@ -224,19 +351,84 @@ export class CollectionHandle<F extends FieldMap> {
    * @throws if the field is not a text field, or if the record is missing/deleted.
    */
   editText(
-    _id: string,
-    _field: keyof F & string,
-    _op: { index: number; insert?: string; delete?: number },
+    id: string,
+    field: TextKeys<F>,
+    op: { index: number; insert?: string; delete?: number },
   ): void {
-    throw new Error('not implemented');
+    const kind = this.descriptor.fields[field] as
+      | ValueKind<unknown>
+      | CounterKind
+      | TextKind
+      | undefined;
+
+    if (kind === undefined) {
+      throw new Error(
+        `Field "${field}" is not declared in collection "${this.name}"`,
+      );
+    }
+    if (kind.kind !== 'text') {
+      throw new Error(
+        `Field "${field}" in collection "${this.name}" is not a text field (kind: "${kind.kind}")`,
+      );
+    }
+    if (!hasRecord(this.doc, this.name, id)) {
+      throw new Error(`Record "${id}" does not exist in collection "${this.name}"`);
+    }
+    if (isDeleted(this.doc, this.name, id)) {
+      throw new Error(`Record "${id}" has been deleted in collection "${this.name}"`);
+    }
+
+    // --- Input validation (Fix 1) ---
+    if (op.insert === undefined && op.delete === undefined) {
+      throw new Error('editText op must have insert, delete, or both');
+    }
+    if (!Number.isInteger(op.index) || op.index < 0) {
+      throw new Error('editText index must be a non-negative integer');
+    }
+    if (op.delete !== undefined) {
+      if (!Number.isInteger(op.delete) || op.delete < 0) {
+        throw new Error('editText delete length must be a non-negative integer');
+      }
+    }
+
+    const yText = getOrCreateText(this.doc, this.name, id, field);
+    const textLen = yText.length;
+
+    if (op.delete !== undefined && op.index + op.delete > textLen) {
+      throw new Error('editText delete range out of bounds');
+    }
+    const lengthAfterDelete = textLen - (op.delete ?? 0);
+    if (op.index > lengthAfterDelete) {
+      throw new Error('editText index out of bounds');
+    }
+
+    // Delete first, then insert (Fix 1 — replace semantics).
+    this.doc.transact(() => {
+      if (op.delete !== undefined) {
+        yText.delete(op.index, op.delete);
+      }
+      if (op.insert !== undefined) {
+        yText.insert(op.index, op.insert);
+      }
+    });
   }
 
   /**
    * Soft-deletes a record by setting its `_deleted` flag.
    * @throws if the record is missing or already deleted.
    */
-  remove(_id: string): void {
-    throw new Error('not implemented');
+  remove(id: string): void {
+    if (!hasRecord(this.doc, this.name, id)) {
+      throw new Error(`Record "${id}" does not exist in collection "${this.name}"`);
+    }
+    if (isDeleted(this.doc, this.name, id)) {
+      throw new Error(`Record "${id}" is already deleted in collection "${this.name}"`);
+    }
+
+    this.doc.transact(() => {
+      const valuesMap = this.doc.getMap<unknown>(valuesMapName(this.name));
+      valuesMap.set(deletedKey(id), true);
+    });
   }
 
   // -------------------------------------------------------------------------
