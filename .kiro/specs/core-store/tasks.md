@@ -88,7 +88,7 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
     - In openSpace: call navigator.storage.persist() when available (best effort, never throw) and expose the result as `space.persisted: boolean`
     - _Requirements: 4.1, 4.2, 4.3_
 
-  - [ ] 6.3 Implement `encodeState`, `applyUpdate`, and `close`
+  - [x] 6.3 Implement `encodeState`, `applyUpdate`, and `close`
     - `encodeState()` returns `Y.encodeStateAsUpdate(doc)`
     - `applyUpdate(u)` calls `Y.applyUpdate(doc, u)`; triggers the update listener, so subscribers are notified
     - `close()` destroys the provider and the doc, releasing IndexedDB resources
@@ -101,6 +101,10 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
     - Test that `subscribe` / unsubscribe work correctly
     - Test that `getSnapshot()` returns the same reference when nothing changed and a new one after a write
     - Test that `close()` does not throw and resolves cleanly
+    - close(): clear subscribers; any Space or collection method called after close throws "space is closed"; ignore a persist() result that arrives after close
+    - When `persisted` changes, mark the snapshot stale so useSyncExternalStore re-renders
+    - applyUpdate(update, origin?) passes origin through to Y.applyUpdate (the sync layer uses it to avoid echoing updates back)
+    - Test: two spaces exchange encodeState/applyUpdate and end up with identical snapshots
     - _Requirements: 2.4, 4.1, 4.2, 4.3_
 
 - [ ] 7. Property-based tests

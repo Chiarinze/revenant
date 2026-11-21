@@ -70,10 +70,35 @@ export interface Space<C extends CollectionMap> {
   /**
    * Whether the browser granted durable storage for this origin.
    * Always `false` in environments where `navigator.storage.persist` is absent.
+   * Becomes `true` asynchronously once the browser grants the request.
    *
    * Requirements: 2.1
    */
   readonly persisted: boolean;
+
+  /**
+   * Returns a Uint8Array containing the full Yjs state of the doc,
+   * suitable for sending to another copy or persisting externally.
+   *
+   * Requirements: 5.5
+   */
+  encodeState(): Uint8Array;
+
+  /**
+   * Applies a Yjs update (produced by `encodeState` or by the sync layer)
+   * to the local doc. This triggers the update listener, so subscribers
+   * are notified.
+   *
+   * Requirements: 5.5
+   */
+  applyUpdate(update: Uint8Array): void;
+
+  /**
+   * Destroys the IndexedDB provider and the Y.Doc, releasing all resources.
+   *
+   * Requirements: 2.4
+   */
+  close(): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,10 +115,12 @@ export interface Space<C extends CollectionMap> {
  * - Races `provider.whenSynced` against an IndexedDB-availability check
  *   so the promise never hangs when IndexedDB is unavailable.
  * - Builds one `CollectionHandle` per collection declared in the schema.
- * - Calls `navigator.storage.persist()` as a best-effort request; exposes
- *   the result as `space.persisted`.
+ * - Calls `navigator.storage.persist()` as a best-effort request in the
+ *   background (never awaited on the main path, so Firefox's permission
+ *   prompt never blocks openSpace). `space.persisted` is a getter that
+ *   returns `true` once granted and notifies subscribers when it changes.
  *
- * Requirements: 2.1, 2.2, 2.3, 4.1, 4.2, 4.3
+ * Requirements: 2.1, 2.2, 2.3, 2.4, 4.1, 4.2, 4.3, 5.5
  */
 export async function openSpace<C extends CollectionMap>({
   id,
@@ -115,6 +142,7 @@ export async function openSpace<C extends CollectionMap>({
   }
 
   // --- Probe IndexedDB with a quick open to surface quota/policy blocks ---
+  // After probing, delete the probe database so it doesn't accumulate.
   await new Promise<void>((resolve, reject) => {
     try {
       const req = indexedDB.open('__revenant_probe__');
@@ -126,6 +154,12 @@ export async function openSpace<C extends CollectionMap>({
         );
       req.onsuccess = () => {
         req.result.close();
+        // Delete the probe database to avoid leaving it behind.
+        try {
+          indexedDB.deleteDatabase('__revenant_probe__');
+        } catch {
+          // Best effort — ignore deletion errors.
+        }
         resolve();
       };
       // The first open may trigger onupgradeneeded before onsuccess.
@@ -150,19 +184,29 @@ export async function openSpace<C extends CollectionMap>({
   // Wait until all locally-persisted updates have been applied to the doc.
   await provider.whenSynced;
 
-  // --- Best-effort durable storage request ---
-  let persisted = false;
-  try {
-    if (
-      typeof navigator !== 'undefined' &&
-      navigator.storage != null &&
-      typeof navigator.storage.persist === 'function'
-    ) {
-      persisted = await navigator.storage.persist();
+  // --- Best-effort durable storage request (non-blocking) ---
+  // We deliberately do NOT await this. Firefox may show a prompt, and we
+  // must not block openSpace on user interaction. `persistedFlag` is updated
+  // in the background; the getter below reflects it once it resolves.
+  let persistedFlag = false;
+  void (async () => {
+    try {
+      if (
+        typeof navigator !== 'undefined' &&
+        navigator.storage != null &&
+        typeof navigator.storage.persist === 'function'
+      ) {
+        const granted = await navigator.storage.persist();
+        if (granted && !persistedFlag) {
+          persistedFlag = true;
+          // Notify subscribers so UI can react to the granted state.
+          notifySubscribers();
+        }
+      }
+    } catch {
+      // Ignore — best effort only.
     }
-  } catch {
-    // Ignore — best effort only.
-  }
+  })();
 
   // --- Build one CollectionHandle per collection ---
   const handles = {} as CollectionHandles<C>;
@@ -177,6 +221,17 @@ export async function openSpace<C extends CollectionMap>({
   // --- Subscription state ---
   const subscribers = new Set<SubscribeCallback>();
 
+  function notifySubscribers(): void {
+    for (const cb of subscribers) {
+      try {
+        cb();
+      } catch (err) {
+        // Report the error but don't let it break the notification loop.
+        console.error('openSpace: subscriber threw an error', err);
+      }
+    }
+  }
+
   // Snapshot state: stale=true initially so the first call always builds.
   let stale = true;
   let cachedSnapshot: Snapshot<C> | null = null;
@@ -184,13 +239,7 @@ export async function openSpace<C extends CollectionMap>({
   // Listen to every update on the doc (local writes AND applyUpdate).
   doc.on('update', () => {
     stale = true;
-    for (const cb of subscribers) {
-      try {
-        cb();
-      } catch {
-        // Never let a subscriber crash the notification loop.
-      }
-    }
+    notifySubscribers();
   });
 
   // ---------------------------------------------------------------------------
@@ -198,7 +247,9 @@ export async function openSpace<C extends CollectionMap>({
   // ---------------------------------------------------------------------------
 
   const space: Space<C> = {
-    persisted,
+    get persisted(): boolean {
+      return persistedFlag;
+    },
 
     collection<K extends keyof C & string>(name: K): CollectionHandles<C>[K] {
       const handle = (handles as Record<string, CollectionHandle<FieldMap>>)[name];
@@ -233,6 +284,21 @@ export async function openSpace<C extends CollectionMap>({
       cachedSnapshot = snap;
       stale = false;
       return cachedSnapshot;
+    },
+
+    encodeState(): Uint8Array {
+      return Y.encodeStateAsUpdate(doc);
+    },
+
+    applyUpdate(update: Uint8Array): void {
+      Y.applyUpdate(doc, update);
+      // The doc's 'update' listener fires automatically, so subscribers
+      // are notified and the snapshot is marked stale.
+    },
+
+    async close(): Promise<void> {
+      await provider.destroy();
+      doc.destroy();
     },
   };
 
