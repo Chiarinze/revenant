@@ -46,7 +46,7 @@ describe('collection()', () => {
   });
 
   it('key is undefined when no options are passed', () => {
-    const c = collection({ id: value<string>() });
+    const c = collection({ name: value<string>() });
     expect(c.key).toBeUndefined();
   });
 
@@ -95,20 +95,20 @@ describe('defineSchema()', () => {
 
 describe('defineSchema() — name validation', () => {
   it('throws when a collection name is empty', () => {
-    expect(() => defineSchema({ '': collection({ id: value<string>() }) })).toThrow(
+    expect(() => defineSchema({ '': collection({ name: value<string>() }) })).toThrow(
       /must not be empty/,
     );
   });
 
   it('throws when a collection name contains ":"', () => {
     expect(() =>
-      defineSchema({ 'bad:name': collection({ id: value<string>() }) }),
+      defineSchema({ 'bad:name': collection({ name: value<string>() }) }),
     ).toThrow(/must not contain/);
   });
 
   it('throws when a collection name contains "/"', () => {
     expect(() =>
-      defineSchema({ 'bad/name': collection({ id: value<string>() }) }),
+      defineSchema({ 'bad/name': collection({ name: value<string>() }) }),
     ).toThrow(/must not contain/);
   });
 
@@ -136,10 +136,18 @@ describe('defineSchema() — name validation', () => {
     ).toThrow(/must not start with "_"/);
   });
 
+  it('throws when a field is named "id"', () => {
+    expect(() =>
+      defineSchema({
+        items: collection({ id: value<string>() }),
+      }),
+    ).toThrow(/"id".*reserved/i);
+  });
+
   it('error message includes the offending name', () => {
     let err: Error | undefined;
     try {
-      defineSchema({ 'bad:col': collection({ id: value<string>() }) });
+      defineSchema({ 'bad:col': collection({ name: value<string>() }) });
     } catch (e) {
       err = e as Error;
     }

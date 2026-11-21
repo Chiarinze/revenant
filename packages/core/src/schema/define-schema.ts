@@ -32,6 +32,11 @@ function assertValidFieldName(fieldName: string, collectionName: string): void {
       `Field name "${fieldName}" in collection "${collectionName}" must not start with "_" (reserved for internal fields).`,
     );
   }
+  if (fieldName === 'id') {
+    throw new Error(
+      `Field name "id" in collection "${collectionName}" is reserved.`,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
