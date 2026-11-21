@@ -15,7 +15,7 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
   - Create `packages/core/src/index.ts` as an empty barrel file (will be filled in later tasks)
   - _Requirements: 1.1, 2.1_
 
-- [ ] 2. Schema declaration and type inference
+- [x] 2. Schema declaration and type inference
   - [x] 2.1 Implement field-kind helpers and schema builder
     - Create `packages/core/src/schema/kinds.ts` exporting `value<T>()`, `counter()`, `text()` factory functions, each carrying a type tag
     - Create `packages/core/src/schema/collection.ts` exporting `collection(fields, options?)` where `options.key` is an optional natural-key extractor
@@ -24,13 +24,13 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
     - Validate names at runtime: collection and field names must be non-empty and must not contain ":" or "/"; field names must not start with "_" (reserved for internal fields such as _deleted)
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 2.2 Write unit tests for schema declaration
+  - [x] 2.2 Write unit tests for schema declaration
     - Verify that `defineSchema` captures collection names and field kinds correctly
     - Verify that invalid collection and field names (containing ":" or "/", empty, or field names starting with "_") throw at runtime
     - _Requirements: 1.1, 1.2_
 
 - [ ] 3. Data layout inside the Y.Doc
-  - [ ] 3.1 Implement the flat Y.Doc layout helpers
+  - [x] 3.1 Implement the flat Y.Doc layout helpers
     - Create `packages/core/src/store/doc-keys.ts` with pure functions that build map/text keys (`c:records`, `c:values`, `c:tallies`, `c:text:recordId/field`)
     - Write helpers that read and write `c:records`, `c:values`, `c:tallies` on a given `Y.Doc`, keeping all Yjs types at this layer
     - _Requirements: 3.1, 3.3, 3.4, 3.5_
@@ -51,6 +51,8 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
     - `create(fields)` writes a row to `c:records` and sets initial `value` fields in `c:values`; uses natural-key if declared, returning the existing ID if the key already exists; uses `randomId()` otherwise
     - `get(id)` reads all fields for the record, returns `undefined` for missing or deleted records
     - `all()` returns all non-deleted records as typed plain objects
+    - Wrap each public operation (create, update, increment, decrement, editText, remove) in a single outer doc.transact so it's one atomic change and one subscriber notification
+    - If create finds an existing natural-key record that is soft-deleted, restore it by removing its _deleted flag
     - _Requirements: 3.1, 3.2, 3.7_
 
   - [ ] 4.2 Implement `update`, `increment`/`decrement`, `editText`, and `remove`
@@ -58,6 +60,7 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
     - `increment(id, field, n)` / `decrement(id, field, n)` write to the tally key `recordId/field/clientId` without reading the total; throw for non-counter fields
     - `editText(id, field, op)` calls `Y.Text.insert` or `Y.Text.delete`; throws for non-text fields
     - `remove(id)` sets `recordId/_deleted` to `true` in `c:values`
+    - increment/decrement amounts must be positive safe integers (Number.isSafeInteger and > 0); throw otherwise. Decimal amounts would make sums depend on order and break convergence
     - _Requirements: 3.3, 3.4, 3.5, 3.6_
 
   - [ ] 4.3 Write unit tests for all collection operations

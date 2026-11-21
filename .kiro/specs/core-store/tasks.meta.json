@@ -34,6 +34,37 @@
         "chatSessionId": "sess_462f1d4c-5d8a-452b-b78d-a612488f849d",
         "timestamp": 1795263554224
       }
+    ],
+    "2.2 Write unit tests for schema declaration": [
+      {
+        "executionId": "b71c477c-e1c8-4456-952f-29f54c908a63",
+        "chatSessionId": "sess_b92fab76-830a-49b3-9c00-b13884bfc3ba",
+        "timestamp": 1795264004670
+      },
+      {
+        "executionId": "b71c477c-e1c8-4456-952f-29f54c908a63",
+        "chatSessionId": "sess_b92fab76-830a-49b3-9c00-b13884bfc3ba",
+        "timestamp": 1795264053035
+      }
+    ],
+    "2. Schema declaration and type inference": [
+      {
+        "executionId": "b71c477c-e1c8-4456-952f-29f54c908a63",
+        "chatSessionId": "sess_b92fab76-830a-49b3-9c00-b13884bfc3ba",
+        "timestamp": 1795264053670
+      }
+    ],
+    "3.1 Implement the flat Y.Doc layout helpers": [
+      {
+        "executionId": "d68e7b62-9fc0-4583-a843-f685e65c105b",
+        "chatSessionId": "sess_9519d52b-d616-4487-8dc8-cb34b59eaadf",
+        "timestamp": 1795264102268
+      },
+      {
+        "executionId": "d68e7b62-9fc0-4583-a843-f685e65c105b",
+        "chatSessionId": "sess_9519d52b-d616-4487-8dc8-cb34b59eaadf",
+        "timestamp": 1795264291098
+      }
     ]
   }
 }
