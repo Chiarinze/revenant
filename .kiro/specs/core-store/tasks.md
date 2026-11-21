@@ -72,7 +72,7 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
 - [x] 5. Checkpoint — verify collection layer
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Space: opening, persistence, subscriptions, snapshots
+- [x] 6. Space: opening, persistence, subscriptions, snapshots
   - [x] 6.1 Implement `openSpace`
     - Create `packages/core/src/space/open-space.ts` exporting `openSpace({ id, schema })`
     - Opens a `Y.Doc`, attaches a `y-indexeddb` provider using `id` as the name, waits for `provider.whenSynced` before resolving
@@ -97,7 +97,7 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
     - Subscriber errors: keep isolating them, but report each with console.error instead of swallowing silently
     - _Requirements: 2.4, 5.5_
 
-  - [ ] 6.4 Write unit tests for openSpace, subscriptions, and close
+  - [x] 6.4 Write unit tests for openSpace, subscriptions, and close
     - Test that `subscribe` / unsubscribe work correctly
     - Test that `getSnapshot()` returns the same reference when nothing changed and a new one after a write
     - Test that `close()` does not throw and resolves cleanly
@@ -155,6 +155,7 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
 - [ ] 8. Wire public API
   - Export `defineSchema`, `collection`, `value`, `counter`, `text`, `openSpace`, and all relevant types from `packages/core/src/index.ts`
   - Confirm that nothing beyond the public barrel file needs to be imported by an app
+  - CollectionHandle methods must throw "space is closed" after the space is closed (handles obtained before close included); test it with a write after close
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 3.1–3.7, 4.1–4.3, 5.1–5.6_
 
 - [ ] 9. Final checkpoint — Ensure all tests pass

@@ -89,9 +89,12 @@ export interface Space<C extends CollectionMap> {
    * to the local doc. This triggers the update listener, so subscribers
    * are notified.
    *
+   * The optional `origin` is passed through to Yjs so the sync layer can
+   * identify its own echoed updates and discard them.
+   *
    * Requirements: 5.5
    */
-  applyUpdate(update: Uint8Array): void;
+  applyUpdate(update: Uint8Array, origin?: unknown): void;
 
   /**
    * Destroys the IndexedDB provider and the Y.Doc, releasing all resources.
@@ -189,6 +192,15 @@ export async function openSpace<C extends CollectionMap>({
   // must not block openSpace on user interaction. `persistedFlag` is updated
   // in the background; the getter below reflects it once it resolves.
   let persistedFlag = false;
+
+  // Closed flag — set to true in close(); guards every public method.
+  let closed = false;
+
+  // Snapshot state: stale=true initially so the first call always builds.
+  // Declared here (before the persist IIFE) so the IIFE can set stale=true.
+  let stale = true;
+  let cachedSnapshot: Snapshot<C> | null = null;
+
   void (async () => {
     try {
       if (
@@ -197,8 +209,12 @@ export async function openSpace<C extends CollectionMap>({
         typeof navigator.storage.persist === 'function'
       ) {
         const granted = await navigator.storage.persist();
+        // If the space was closed while we waited, do nothing.
+        if (closed) return;
         if (granted && !persistedFlag) {
           persistedFlag = true;
+          // Mark snapshot stale so useSyncExternalStore re-renders.
+          stale = true;
           // Notify subscribers so UI can react to the granted state.
           notifySubscribers();
         }
@@ -232,10 +248,6 @@ export async function openSpace<C extends CollectionMap>({
     }
   }
 
-  // Snapshot state: stale=true initially so the first call always builds.
-  let stale = true;
-  let cachedSnapshot: Snapshot<C> | null = null;
-
   // Listen to every update on the doc (local writes AND applyUpdate).
   doc.on('update', () => {
     stale = true;
@@ -252,6 +264,7 @@ export async function openSpace<C extends CollectionMap>({
     },
 
     collection<K extends keyof C & string>(name: K): CollectionHandles<C>[K] {
+      if (closed) throw new Error('space is closed');
       const handle = (handles as Record<string, CollectionHandle<FieldMap>>)[name];
       if (handle === undefined) {
         throw new Error(`Collection "${name}" is not declared in this schema`);
@@ -260,6 +273,7 @@ export async function openSpace<C extends CollectionMap>({
     },
 
     subscribe(cb: SubscribeCallback): () => void {
+      if (closed) throw new Error('space is closed');
       subscribers.add(cb);
       return () => {
         subscribers.delete(cb);
@@ -267,6 +281,7 @@ export async function openSpace<C extends CollectionMap>({
     },
 
     getSnapshot(): Snapshot<C> {
+      if (closed) throw new Error('space is closed');
       if (!stale && cachedSnapshot !== null) {
         return cachedSnapshot;
       }
@@ -287,18 +302,25 @@ export async function openSpace<C extends CollectionMap>({
     },
 
     encodeState(): Uint8Array {
+      if (closed) throw new Error('space is closed');
       return Y.encodeStateAsUpdate(doc);
     },
 
-    applyUpdate(update: Uint8Array): void {
-      Y.applyUpdate(doc, update);
+    applyUpdate(update: Uint8Array, origin?: unknown): void {
+      if (closed) throw new Error('space is closed');
+      Y.applyUpdate(doc, update, origin);
       // The doc's 'update' listener fires automatically, so subscribers
       // are notified and the snapshot is marked stale.
     },
 
     async close(): Promise<void> {
+      // Idempotent — subsequent calls are a no-op.
+      if (closed) return;
+      closed = true;
       await provider.destroy();
       doc.destroy();
+      // Clear all subscribers so no callbacks fire after close.
+      subscribers.clear();
     },
   };
 
