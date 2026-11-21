@@ -69,7 +69,7 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
     - Test error cases: wrong field kind, missing record, writing to a deleted record
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-- [-] 5. Checkpoint — verify collection layer
+- [x] 5. Checkpoint — verify collection layer
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Space: opening, persistence, subscriptions, snapshots
