@@ -79,16 +79,22 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
     - Builds a `CollectionHandle` per collection and exposes it via `space.collection(name)`
     - _Requirements: 2.1, 2.2, 2.3_
 
-  - [ ] 6.2 Implement subscriptions and snapshot
+  - [x] 6.2 Implement subscriptions and snapshot
     - Listen on `doc.on('update', ...)` to mark the snapshot stale and call all registered subscriber callbacks
     - `subscribe(cb)` registers a callback and returns an unsubscribe function
     - `getSnapshot()` rebuilds plain objects from the Y.Doc only when stale; returns the same reference between changes
+    - In openSpace: reject an empty id; name the IndexedDB database `revenant:${id}`
+    - In openSpace: if IndexedDB is unavailable, throw a clear error instead of waiting forever on whenSynced
+    - In openSpace: call navigator.storage.persist() when available (best effort, never throw) and expose the result as `space.persisted: boolean`
     - _Requirements: 4.1, 4.2, 4.3_
 
   - [ ] 6.3 Implement `encodeState`, `applyUpdate`, and `close`
     - `encodeState()` returns `Y.encodeStateAsUpdate(doc)`
     - `applyUpdate(u)` calls `Y.applyUpdate(doc, u)`; triggers the update listener, so subscribers are notified
     - `close()` destroys the provider and the doc, releasing IndexedDB resources
+    - openSpace must not wait for navigator.storage.persist() (Firefox may show a prompt): start it in the background; make `space.persisted` a getter that becomes true when granted, and notify subscribers when it changes
+    - Delete the `__revenant_probe__` database after the IndexedDB availability check
+    - Subscriber errors: keep isolating them, but report each with console.error instead of swallowing silently
     - _Requirements: 2.4, 5.5_
 
   - [ ] 6.4 Write unit tests for openSpace, subscriptions, and close
