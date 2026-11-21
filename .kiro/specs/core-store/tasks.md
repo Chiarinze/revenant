@@ -16,7 +16,7 @@ Build `packages/core` from scratch: monorepo scaffolding, schema declaration, th
   - _Requirements: 1.1, 2.1_
 
 - [ ] 2. Schema declaration and type inference
-  - [ ] 2.1 Implement field-kind helpers and schema builder
+  - [x] 2.1 Implement field-kind helpers and schema builder
     - Create `packages/core/src/schema/kinds.ts` exporting `value<T>()`, `counter()`, `text()` factory functions, each carrying a type tag
     - Create `packages/core/src/schema/collection.ts` exporting `collection(fields, options?)` where `options.key` is an optional natural-key extractor
     - Create `packages/core/src/schema/define-schema.ts` exporting `defineSchema(collections)` which validates names at runtime and returns the schema object

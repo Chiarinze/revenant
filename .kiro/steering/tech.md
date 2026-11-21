@@ -20,3 +20,4 @@ inclusion: always
 - Anything that merges needs property-based tests proving convergence: any order, any grouping and duplicate updates all produce identical data.
 - Explain why before adding a dependency. Prefer small, well-maintained ones.
 - No secrets in the repo. Configuration comes from environment variables.
+- A task is only done when `pnpm typecheck` and `pnpm test` both pass in every package it touched. Vitest does not type-check.

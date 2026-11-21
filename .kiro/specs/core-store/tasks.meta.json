@@ -12,6 +12,28 @@
         "chatSessionId": "sess_ce22ed11-9bfd-469d-a087-a36907fd7dfe",
         "timestamp": 1795259889189
       }
+    ],
+    "2.1 Implement field-kind helpers and schema builder": [
+      {
+        "executionId": "8a35a27f-d1e0-4dde-91c5-1c54aad3048d",
+        "chatSessionId": "sess_462f1d4c-5d8a-452b-b78d-a612488f849d",
+        "timestamp": 1795260163949
+      },
+      {
+        "executionId": "8a35a27f-d1e0-4dde-91c5-1c54aad3048d",
+        "chatSessionId": "sess_462f1d4c-5d8a-452b-b78d-a612488f849d",
+        "timestamp": 1795260252939
+      },
+      {
+        "executionId": "ac210312-bec4-4c6d-bdce-d780b7ebb9a5",
+        "chatSessionId": "sess_462f1d4c-5d8a-452b-b78d-a612488f849d",
+        "timestamp": 1795263211337
+      },
+      {
+        "executionId": "ac210312-bec4-4c6d-bdce-d780b7ebb9a5",
+        "chatSessionId": "sess_462f1d4c-5d8a-452b-b78d-a612488f849d",
+        "timestamp": 1795263554224
+      }
     ]
   }
 }
